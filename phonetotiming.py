@@ -60,58 +60,71 @@ calls = fCall.get_calls()
 
 for call in calls:
     callInfo = {}
+    
     # process all calls with id after lastprocessed
-    if call['Id'] > lastprocessed:
-        if debug:
-            print("Found new Call with Id " + str(call['Id']))
+    if call['Id'] <= lastprocessed:
+        continue
+    
+    if debug:
+        print("Found new Call with Id " + str(call['Id']))
+    
+    if firstRun:
         currentprocessed = max(currentprocessed, call['Id'])
+        continue
 
-        if not firstRun:
-            # if there is a phonebook entry for the caller, use that
-            if call['Name'] != None:
-                callInfo['caller'] = call['Name']
-            # else read the remote phone number depending on the type of call
-            else:
-                if call['Type'] == 3:
-                    # outgoing call
-                    callInfo['caller'] = call['Called']
-                else:
-                    # incoming and missed calls
-                    callInfo['caller'] = call['Caller']
+    # if there is a phonebook entry for the caller, use that
+    if call['Name'] != None:
+        callInfo['caller'] = call['Name']
+    # else read the remote phone number depending on the type of call
+    else:
+        if call['Type'] == 3:
+            # outgoing call
+            callInfo['caller'] = call['Called']
+        else:
+            # incoming and missed calls
+            callInfo['caller'] = call['Caller']
 
-            callDuration = call['Duration']
-            if callDuration.total_seconds() < 5:
-                if debug:
-                    print ("skipping call, because it is too short (<5s)")
-                continue
+    callDuration = call['Duration']
+    if callDuration.total_seconds() < 5:
+        if debug:
+            print ("skipping call, because it is too short (<5s)")
+        continue
 
-            # decompose start and end date
-            startDate = call['Date']
-            callInfo['startyear'] = startDate.year
-            callInfo['startmonth'] = startDate.month
-            callInfo['startday'] = startDate.day
-            callInfo['starthour'] = startDate.hour
-            callInfo['startminute'] = startDate.minute
-            callInfo['startsecond'] = startDate.second
-            
-            endDate = startDate + callDuration
-            callInfo['endyear'] = endDate.year
-            callInfo['endmonth'] = endDate.month
-            callInfo['endday'] = endDate.day
-            callInfo['endhour'] = endDate.hour
-            callInfo['endminute'] = endDate.minute
-            callInfo['endsecond'] = endDate.second
+    # decompose start and end date
+    startDate = call['Date']
+    callInfo['startyear'] = startDate.year
+    callInfo['startmonth'] = startDate.month
+    callInfo['startday'] = startDate.day
+    callInfo['starthour'] = startDate.hour
+    callInfo['startminute'] = startDate.minute
+    callInfo['startsecond'] = startDate.second
+    
+    endDate = startDate + callDuration
+    callInfo['endyear'] = endDate.year
+    callInfo['endmonth'] = endDate.month
+    callInfo['endday'] = endDate.day
+    callInfo['endhour'] = endDate.hour
+    callInfo['endminute'] = endDate.minute
+    callInfo['endsecond'] = endDate.second
 
-            # fill AppleScript template
-            if debug:
-                print("Executing AppleScript")
-            script = appleScript(callInfo)
-            code,out,err = osascript.run(script)
-            if code != 0:
-                print ("osascript return code = " + str(code))
-                print (out)
-                print (err)
-                hadError = True
+    if (datetime.datetime.now() - endDate).total_seconds() < 60:
+        if debug:
+            print ("skipping call, call has not ended yet")
+        continue
+
+    # update last processed id
+    currentprocessed = max(currentprocessed, call['Id'])
+
+    # fill AppleScript template
+    if debug:
+        print("Executing AppleScript")
+    script = appleScript(callInfo)
+    code,out,err = osascript.run(script)
+    if code != 0:
+        print ("osascript return code = " + str(code))
+        print (out)
+        print (err)
+        hadError = True
 
 # finally write new lastprocessed into config
 if not hadError:
