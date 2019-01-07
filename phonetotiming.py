@@ -50,6 +50,7 @@ if debug:
 
 lastprocessed = int(config['main']['lastprocessed'])
 currentprocessed = lastprocessed
+hadError = False
 
 # connect to Fritz!Box
 fCall = FritzCall(password=fritzPassword)
@@ -78,6 +79,12 @@ for call in calls:
                     # incoming and missed calls
                     callInfo['caller'] = call['Caller']
 
+            callDuration = call['Duration']
+            if callDuration.total_seconds() < 5:
+                if debug:
+                    print ("skipping call, because it is too short (<5s)")
+                continue
+
             # decompose start and end date
             startDate = call['Date']
             callInfo['startyear'] = startDate.year
@@ -87,14 +94,14 @@ for call in calls:
             callInfo['startminute'] = startDate.minute
             callInfo['startsecond'] = startDate.second
             
-            endDate = startDate + call['Duration']
+            endDate = startDate + callDuration
             callInfo['endyear'] = endDate.year
             callInfo['endmonth'] = endDate.month
             callInfo['endday'] = endDate.day
             callInfo['endhour'] = endDate.hour
             callInfo['endminute'] = endDate.minute
             callInfo['endsecond'] = endDate.second
-            
+
             # fill AppleScript template
             if debug:
                 print("Executing AppleScript")
@@ -104,11 +111,13 @@ for call in calls:
                 print ("osascript return code = " + str(code))
                 print (out)
                 print (err)
+                hadError = True
 
 # finally write new lastprocessed into config
-config['main']['lastprocessed'] = str(currentprocessed)
-with open(cfgname, 'w') as configfile:
-    config.write(configfile)
+if not hadError:
+    config['main']['lastprocessed'] = str(currentprocessed)
+    with open(cfgname, 'w') as configfile:
+        config.write(configfile)
 
 if firstRun:
     print(r'\o/ - everything seems to work. The latest call on your call list has the Id ' + str(currentprocessed) + '.')
