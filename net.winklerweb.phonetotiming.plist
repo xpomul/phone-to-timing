@@ -6,7 +6,7 @@
   <string>net.winklerweb.phonetotiming</string>
   <key>ProgramArguments</key>
   <array>
-    <string><path-to-script>/phonetotiming.py</string>
+    <string>/Users/stefan/git/phone-to-timing/phonetotiming.py</string>
   </array>
   <key>Nice</key>
   <integer>1</integer>

@@ -1,7 +1,7 @@
 #!/opt/local/bin/python
 
 from os.path import expanduser
-from fritzconnection import FritzCall
+from fritzconnection.lib.fritzcall import FritzCall
 from string import Template
 import datetime
 import osascript
@@ -38,6 +38,7 @@ end tell
 cfgname = expanduser("~/.phonetotiming.ini")
 config = configparser.ConfigParser()
 config.read(cfgname)
+fritzAddress = config['main']['ip']
 fritzPassword = config['main']['password']
 firstRun = 'firstrun' in config['main']
 if firstRun:
@@ -53,7 +54,7 @@ currentprocessed = lastprocessed
 hadError = False
 
 # connect to Fritz!Box
-fCall = FritzCall(password=fritzPassword)
+fCall = FritzCall(address=fritzAddress, password=fritzPassword)
 
 # read call list
 calls = fCall.get_calls()
@@ -62,36 +63,38 @@ for call in calls:
     callInfo = {}
     
     # process all calls with id after lastprocessed
-    if call['Id'] <= lastprocessed:
+    if debug:
+        print("Call id ", call.id)
+    if call.id <= lastprocessed:
         continue
     
     if debug:
-        print("Found new Call with Id " + str(call['Id']))
+        print("Found new Call with Id " + str(call.id))
     
     if firstRun:
-        currentprocessed = max(currentprocessed, call['Id'])
+        currentprocessed = max(currentprocessed, call.id)
         continue
 
     # if there is a phonebook entry for the caller, use that
-    if call['Name'] != None:
-        callInfo['caller'] = call['Name']
+    if call.Name != None:
+        callInfo['caller'] = call.Name
     # else read the remote phone number depending on the type of call
     else:
-        if call['Type'] == 3:
+        if call.Type == 3:
             # outgoing call
-            callInfo['caller'] = call['Called']
+            callInfo['caller'] = call.Called
         else:
             # incoming and missed calls
-            callInfo['caller'] = call['Caller']
+            callInfo['caller'] = call.Caller
 
-    callDuration = call['Duration']
+    callDuration = call.duration
     if callDuration.total_seconds() < 5:
         if debug:
             print ("skipping call, because it is too short (<5s)")
         continue
 
     # decompose start and end date
-    startDate = call['Date']
+    startDate = call.date
     callInfo['startyear'] = startDate.year
     callInfo['startmonth'] = startDate.month
     callInfo['startday'] = startDate.day
@@ -113,7 +116,7 @@ for call in calls:
         continue
 
     # update last processed id
-    currentprocessed = max(currentprocessed, call['Id'])
+    currentprocessed = max(currentprocessed, call.id)
 
     # fill AppleScript template
     if debug:
