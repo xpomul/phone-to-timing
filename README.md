@@ -1,5 +1,10 @@
 # phone-to-timing
-Small script to  Fritz!Box Call List to Timing.app on Mac.
+
+Timing.app (https://timingapp.com) is a powerful time tracking application for the Mac. 
+During the day, it tracks open apps, calendar entries, and other events, and at the end of the day, you can assign the time spent to your projects in order to bill the customers and to know how you have spent your time.
+
+With this small script, you can now also automatically sync/import phone calls from the FRITZ!Box Call List to Timing.app.
+
 Tested with FRITZ!Box 6490 Cable (FritzOS 06.87) and Timing.app 2018.4.
 
 # Installation
